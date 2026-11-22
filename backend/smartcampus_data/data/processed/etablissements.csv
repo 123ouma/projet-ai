@@ -1,0 +1,5 @@
+﻿etablissement_id,name,short_name,country,city,website_url,official_name_source_url,contact_email,contact_phone,campus_location,collection_date,document_language,verification_status
+IIT,Institut International de Technologie,IIT,Tunisie,Sfax,https://iit.tn,https://iit.tn/,info@iit.tn,,"Route Mharza km 1,5 Sfax",2026-11-21T23:34:20Z,fr,collected_unverified
+ISB,International School of Business,ISB,Tunisie,Sfax,https://isb.tn,https://isb.tn/,info@isb.ens.tn,,"Campus Technopôle : Route de Tunis Km 10, Cité El Ons Technopôle de Sfax",2026-11-21T23:36:03Z,fr,collected_unverified
+ISA,International School of Architecture,ISA,Tunisie,Sfax,https://isa.tn,https://isa.tn/,INFO@ISA.TN,+216 54 34 15 44,"-Route Mharza km 1,5 Sfax,Tunisie",2026-11-21T23:36:30Z,fr,collected_unverified
+2I2S,École Internationale des Sciences de Santé,2I2S,Tunisie,Sfax,https://2i2s.tn,https://2i2s.tn/,contact@2i2s.tn,+216 74 000 000,,2026-11-21T23:36:36Z,fr,collected_unverified

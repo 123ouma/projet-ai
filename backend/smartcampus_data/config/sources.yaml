@@ -1,0 +1,193 @@
+# Official sources for SA-18.
+# Only public pages/brochures owned by the four establishments are configured.
+# Patterns are intentionally narrow: no whole-site crawl, no authentication, no anti-bot bypass.
+
+defaults:
+  request_timeout: 20
+  max_retries: 2
+  delay_seconds: 1.2
+  max_depth: 2
+  max_pages: 30
+  max_pdfs: 10
+  url_include_patterns:
+    - "/formation"
+    - "/formations"
+    - "/licence"
+    - "/licences"
+    - "/master"
+    - "/mast"
+    - "/program"
+    - "/architecture"
+    - "/admission"
+    - "/prepa"
+    - "/contact"
+    - "/iit/"
+    - "/isb/"
+    - "/pcf"
+  url_exclude_patterns:
+    - "/wp-content/uploads/"
+    - "/wp-json/"
+    - "/feed"
+    - "/login"
+    - "/intranet"
+    - "/espace-etudiant"
+    - "/vie-estudiantine"
+    - "/actualite"
+    - "/post/"
+    - "/alumni"
+    - "/recherche/"
+    - "/bourse"
+    - "/pre-inscription"
+    - "/preinscription"
+    - "/guide-etudiants"
+    - "#"
+
+establishments:
+  IIT:
+    id: IIT
+    name: Institut International de Technologie
+    short_name: IIT
+    base_url: https://iit.tn
+    country: Tunisie
+    city: Sfax
+    sitemaps:
+      - https://iit.tn/sitemap_index.xml
+      - https://iit.tn/page-sitemap.xml
+    catalog_urls:
+      - https://iit.tn/formation/
+      - https://iit.tn/licences/
+      - https://iit.tn/mastere/
+      - https://iit.tn/filieres-ingenieur/
+      - https://iit.tn/prepa/
+      - https://iit.tn/architecture-2/
+    extra_urls:
+      - https://iit.tn/
+      - https://iit.tn/test/procedure-et-frais-dinscription/
+      - https://iit.tn/contact-3/
+    formation_url_patterns:
+      - "/licence-en-systemes-electriques"
+      - "/licence-en-mecatronique"
+      - "/reseaux-et-cybersecurite"
+      - "/systemes-embarques"
+      - "/big-data-et-analyse-de-donnees"
+      - "/genie-logiciel-systemes-intelligents"
+      - "/filieres-ingenieur/genie-"
+      - "/genie-des-procedes"
+      - "/prepa/"
+      - "/architecture-2/"
+      - "/mastere/"
+    formation_title_patterns:
+      - "big data"
+      - "génie logiciel"
+      - "réseaux et cybersécurité"
+      - "systèmes embarqués"
+      - "mécatronique"
+      - "systèmes électriques"
+      - "génie civil"
+      - "génie informatique"
+      - "génie mécanique"
+      - "génie industriel"
+      - "génie des procédés"
+      - "cycle préparatoire"
+      - "architecture"
+      - "mastère"
+    max_pages: 30
+    max_pdfs: 8
+
+  ISB:
+    id: ISB
+    name: International School of Business
+    short_name: ISB
+    base_url: https://isb.tn
+    country: Tunisie
+    city: Sfax
+    sitemaps:
+      - https://isb.tn/sitemap_index.xml
+      - https://isb.tn/page-sitemap.xml
+    catalog_urls:
+      - https://isb.tn/licences-program/
+      - https://isb.tn/program/
+    extra_urls:
+      - https://isb.tn/
+      - https://isb.tn/nos-borchures/
+      - https://isb.tn/contact/
+    formation_url_patterns:
+      - "/program-lba/"
+      - "/business-intelligence/"
+      - "/lng/"
+      - "/business-economics-2/"
+      - "/droit-prive-2/"
+      - "/droit-des-affaires-2/"
+      - "/program-mba/"
+      - "/mmd/"
+      - "/program-mpc/"
+      - "/program-minf/"
+      - "/mmd-en/"
+      - "/program-msf/"
+      - "/master-in-business-law-english/"
+    formation_title_patterns:
+      - "license in business"
+      - "licence en business"
+      - "business intelligence"
+      - "licence nationale en gestion"
+      - "business economics"
+      - "droit privé"
+      - "droit des affaires"
+      - "master in business administration"
+      - "marketing digital"
+      - "comptabilité"
+      - "finance d’entreprise"
+      - "master of science"
+      - "business law"
+    max_pages: 30
+    max_pdfs: 10
+
+  ISA:
+    id: ISA
+    name: International School of Architecture
+    short_name: ISA
+    base_url: https://isa.tn
+    country: Tunisie
+    city: Sfax
+    sitemaps:
+      - https://isa.tn/sitemap_index.xml
+      - https://isa.tn/page-sitemap.xml
+    catalog_urls:
+      - https://isa.tn/formations/
+      - https://isa.tn/formation-en-architecture-en-tunisie-cursus-diplome-isa-sfax/
+    extra_urls:
+      - https://isa.tn/
+      - https://isa.tn/admission-architecture-en-tunisie/
+      - https://isa.tn/procedure-et-frais-dinscription/
+      - https://isa.tn/contact/
+    formation_url_patterns:
+      - "/formation-en-architecture"
+      - "/architecture/"
+    formation_title_patterns:
+      - "architecture"
+      - "diplôme national d’architecte"
+      - "diplome national d'architecte"
+    max_pages: 14
+    max_pdfs: 6
+
+  2I2S:
+    id: 2I2S
+    name: École Internationale des Sciences de Santé
+    short_name: 2I2S
+    base_url: https://2i2s.tn
+    country: Tunisie
+    city: Sfax
+    sitemaps: []
+    catalog_urls:
+      - https://2i2s.tn/formation
+    extra_urls:
+      - https://2i2s.tn/
+      - https://2i2s.tn/admission/procedure-et-frais
+      - https://2i2s.tn/contact
+    formation_url_patterns:
+      - "/formation/licence-sciences-infirmieres"
+    formation_title_patterns:
+      - "licence en sciences infirmières"
+      - "licence nationale en sciences infirmières"
+    max_pages: 12
+    max_pdfs: 6

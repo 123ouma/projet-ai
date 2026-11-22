@@ -1,0 +1,312 @@
+%% SmartCampus AI — Diagramme ERD complet (SA-12 + SA-13 + SA-14)
+%% PostgreSQL 17. Les attributs exhaustifs et les contraintes sont dans MLD.md.
+erDiagram
+    ESTABLISHMENTS ||--o{ FORMATIONS : "propose"
+    DEGREE_LEVELS |o--o{ FORMATIONS : "classe"
+    ACADEMIC_YEARS |o--o{ FORMATIONS : "date (formation)"
+    FORMATIONS ||--o| ADMISSION_REQUIREMENTS : "exige"
+    ACADEMIC_YEARS |o--o{ ADMISSION_REQUIREMENTS : "date (admission)"
+    FORMATIONS ||--o| ACADEMIC_PROGRAMS : "compose"
+    FORMATIONS ||--o{ TUITION_FEES : "tarifie"
+    ACADEMIC_YEARS |o--o{ TUITION_FEES : "date (tarif)"
+
+    USERS ||--o{ USER_ROLES : "possede"
+    ROLES |o--o{ USER_ROLES : "attribue"
+    ESTABLISHMENTS |o--o{ USER_ROLES : "limite le scope"
+    USERS |o--o{ USER_ROLES : "attribue a"
+    USERS ||--o| CANDIDATE_PROFILES : "detient"
+    USERS |o--o{ CANDIDATURES : "postule"
+    FORMATIONS |o--o{ CANDIDATURES : "est visee par"
+    ACADEMIC_YEARS |o--o{ CANDIDATURES : "vise (annee)"
+    CANDIDATURES ||--o{ CANDIDATURE_STATUS_HISTORY : "trace"
+    USERS |o--o{ CANDIDATURE_STATUS_HISTORY : "modifie"
+
+    ESTABLISHMENTS |o--o{ SOURCES : "publie"
+    FORMATIONS |o--o{ SOURCES : "documente"
+    ESTABLISHMENTS |o--o{ DOCUMENTS : "contient"
+    SOURCES |o--o| DOCUMENTS : "pointe vers"
+    ACADEMIC_YEARS |o--o{ DOCUMENTS : "concerne"
+    DOCUMENTS ||--o{ DOCUMENT_FORMATIONS : "lie"
+    FORMATIONS ||--o{ DOCUMENT_FORMATIONS : "est liee a"
+    SOURCES |o--o{ SYNC_HISTORY : "synchronise"
+    DOCUMENTS |o--o{ SYNC_HISTORY : "synchronise"
+    DOCUMENTS ||--o{ DOCUMENT_VERSIONS : "versionne"
+
+    ESTABLISHMENTS {
+        text etablissement_id PK
+        text name
+        text short_name
+        text country
+        text city
+        text website_url
+        text official_name_source_url
+        text contact_email
+        text contact_phone
+        text campus_location
+        timestamptz collection_date
+        text document_language
+        text verification_status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    DEGREE_LEVELS {
+        text code PK
+        text label UK
+        timestamptz created_at
+    }
+
+    ACADEMIC_YEARS {
+        text label PK
+        integer start_year
+        integer end_year
+        timestamptz created_at
+    }
+
+    FORMATIONS {
+        text formation_id PK
+        text etablissement_id FK
+        text degree_level_code FK
+        text academic_year_label FK
+        text formation_name
+        text field
+        text speciality
+        text description
+        numeric duration_years
+        text language
+        text study_mode
+        text diploma_awarded
+        text career_opportunities
+        text further_studies
+        text career_field
+        text bridges
+        text recommended_profile
+        text interest_tags
+        text interest_tags_origin
+        text prerequisite_skills
+        text source_url
+        text source_title
+        text source_type
+        timestamptz collection_date
+        timestamptz last_verified_at
+        text verification_status
+        text document_language
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    ADMISSION_REQUIREMENTS {
+        text admission_id PK
+        text formation_id FK
+        text academic_year_label FK
+        text required_baccalaureate
+        numeric minimum_grade
+        text required_level
+        text admission_method
+        text required_documents
+        text registration_period
+        text special_conditions
+        text source_url
+        text source_title
+        timestamptz collection_date
+        text document_language
+        text verification_status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    ACADEMIC_PROGRAMS {
+        text programme_id PK
+        text formation_id FK
+        text subjects
+        text modules
+        integer semester_count
+        text internships
+        text projects
+        text specializations
+        text skills_acquired
+        text source_url
+        text source_title
+        timestamptz collection_date
+        text document_language
+        text verification_status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    TUITION_FEES {
+        text tarif_id PK
+        text formation_id FK
+        text academic_year_label FK
+        text fee_type
+        text fee_scope
+        numeric tuition_fee
+        numeric registration_fee
+        text other_fees
+        text fee_currency
+        text fee_period
+        text payment_terms
+        text campus_location
+        text contact_email
+        text contact_phone
+        text fee_status
+        text source_url
+        text source_title
+        timestamptz collection_date
+        text document_language
+        text verification_status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    USERS {
+        bigserial user_id PK
+        text email UK
+        text password_hash
+        text full_name
+        boolean is_active
+        timestamptz email_verified_at
+        timestamptz last_login_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    ROLES {
+        text role_code PK
+        text label UK
+        text scope
+        timestamptz created_at
+    }
+
+    USER_ROLES {
+        bigserial user_role_id PK
+        bigint user_id
+        text role_code
+        text scope_etablissement_id
+        timestamptz assigned_at
+        bigint assigned_by FK
+    }
+
+    CANDIDATE_PROFILES {
+        bigserial profile_id PK
+        bigint user_id FK
+        text baccalaureate_type
+        integer baccalaureate_year
+        numeric baccalaureate_grade
+        text results_summary
+        text_array interests
+        text_array preferred_subjects
+        text career_objectives
+        text constraints_text
+        text additional_notes
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CANDIDATURES {
+        bigserial candidature_id PK
+        bigint candidate_user_id FK
+        text formation_id FK
+        text academic_year_label FK
+        text status
+        boolean consent_given
+        timestamptz consent_given_at
+        timestamptz submitted_at
+        text motivation
+        bigint last_changed_by FK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CANDIDATURE_STATUS_HISTORY {
+        bigserial history_id PK
+        bigint candidature_id FK
+        text from_status
+        text to_status
+        bigint changed_by FK
+        timestamptz changed_at
+        text reason
+    }
+
+    SOURCES {
+        text source_id PK
+        text etablissement_id FK
+        text formation_id FK
+        text source_url
+        text source_title
+        text source_type
+        text attribute
+        text value_excerpt
+        text raw_path
+        text value_origin
+        text document_language
+        timestamptz collection_date
+        timestamptz last_verified_at
+        integer http_status
+        text verification_status
+        text evidence_excerpt
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    DOCUMENTS {
+        text document_id PK
+        text etablissement_id FK
+        text document_type
+        text title
+        text url
+        text parent_url
+        text raw_path
+        text metadata_path
+        text sha256
+        bigint byte_size
+        integer http_status
+        text content_type
+        text language
+        integer text_chars
+        integer page_count
+        timestamptz collection_date
+        timestamptz last_verified_at
+        text sync_status
+        text last_error_message
+        text verification_status
+        text academic_year_label FK
+        text rag_index_status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    DOCUMENT_FORMATIONS {
+        text document_id PK
+        text formation_id PK
+        timestamptz created_at
+    }
+
+    SYNC_HISTORY {
+        bigserial sync_id PK
+        text source_id FK
+        text document_id FK
+        text sync_type
+        text sync_status
+        timestamptz started_at
+        timestamptz finished_at
+        integer http_status
+        text error_message
+        integer items_processed
+        integer items_created
+        integer items_updated
+        integer items_failed
+        text triggered_by
+    }
+
+    DOCUMENT_VERSIONS {
+        bigserial version_id PK
+        text document_id FK
+        integer version_number
+        text sha256
+        text raw_path
+        bigint byte_size
+        timestamptz collected_at
+        timestamptz change_detected_at
+        boolean is_current
+    }
