@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     memory_max_chars: int = 8000  # taille max du contexte envoyé au LLM
     memory_max_stored: int = 100  # messages max conservés par session
 
+    # Service LLM de compréhension (SA-36) — service séparé d'Oumayma (SA-33/SA-34)
+    llm_api_url: str = "http://127.0.0.1:8100"  # URL de base, sans /v1/understand
+    llm_api_key: str | None = None  # clé privée X-API-Key, jamais dans Git
+    llm_timeout_seconds: float = 120.0  # l'inférence GPU peut être lente
+
 
 @lru_cache
 def get_settings() -> Settings:

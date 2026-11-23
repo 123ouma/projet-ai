@@ -11,6 +11,7 @@ Structure conforme au document d'architecture SA-4 (§8).
 | SA-16 | PostgreSQL : connexion SQLAlchemy, exécuteur de migrations SQL, docker-compose avec healthcheck | `app/core/database.py`, `app/db/migrate.py`, `database/migrations/001_init.sql`, `docker-compose.yml` |
 | SA-20 | API des formations et des programmes (liste filtrée et paginée, détail, création, modification, archivage, programme par année/semestre) | `app/api/v1/formations.py` |
 | SA-21 | API des tarifs et des conditions d'admission, consultation par budget, comparaison de 2 à 4 formations | `app/api/v1/admissions.py` |
+| SA-36 | Connexion au service LLM d'Oumayma (Qwen3.5-9B, SA-34) : client HTTP, clé `X-API-Key`, gestion des erreurs 502/503, routes `/assistant` (Souhaila) | `app/services/llm/`, `app/api/v1/assistant.py` |
 | SA-26 | Mémoire temporaire des conversations : expiration après inactivité, fenêtre de contexte bornée pour le LLM, purge | `app/services/memory/`, `app/api/v1/conversations.py` |
 
 ## Démarrage
@@ -62,6 +63,32 @@ Consultation publique ; les routes d'écriture exigent l'en-tête `X-Admin-Token
 | GET | `/conversations/{session_id}/messages` (historique) | SA-26 |
 | GET | `/conversations/{session_id}/context` (fenêtre pour le LLM) | SA-26 |
 | DELETE | `/conversations/{session_id}` | SA-26 |
+| POST | `/assistant/understand` (intent, budget_dt, online) | SA-36 |
+| GET | `/assistant/health` (service LLM joignable ? mode mock ?) | SA-36 |
+
+## Service LLM (SA-36)
+
+Le backend appelle le service LLM séparé d'Oumayma (`POST /v1/understand`, en-tête `X-API-Key`).
+Le LLM **comprend** la demande (intent, budget_dt, online) ; il ne donne pas encore de réponse
+factuelle sur les formations (ce sera le RAG).
+
+Variables dans `.env` :
+```
+LLM_API_URL=http://127.0.0.1:8100            # avec Docker : http://host.docker.internal:8100
+LLM_API_KEY=<même clé que le service LLM>
+LLM_TIMEOUT_SECONDS=120
+```
+
+Tester sans GPU : lancer le service LLM avec `LLM_MOCK_MODE=true` (réponses `"mock": true`,
+jamais de vraies prédictions), puis :
+```bash
+curl -X POST http://localhost:8000/api/v1/assistant/understand \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Faskhouli demande préinscription mte3i.","language":"arabizi"}'
+```
+Langues : `fr`, `en`, `arabizi`, `tn` (pas de détection automatique).
+Erreurs : `503` si le LLM est injoignable ou trop lent, `502` si clé refusée ou réponse invalide.
+Remplacer Qwen par une version fine-tunée (QLoRA) se fait côté service LLM, sans changer ces routes.
 
 ## Migrations
 
