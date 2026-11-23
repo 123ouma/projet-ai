@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, Index, String, Uuid, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -20,4 +20,6 @@ class VisitorSessionRow(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # SA-29 can populate this once the backend account model is available.
-    linked_user_id: Mapped[int | None] = mapped_column(BigInteger)
+    linked_user_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.user_id", ondelete="SET NULL")
+    )

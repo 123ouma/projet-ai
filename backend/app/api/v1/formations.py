@@ -9,7 +9,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, contains_eager, selectinload
 
 from app.core.database import get_db
-from app.core.security import require_responsable
+from app.core.security import AuthenticatedUser, assert_establishment_permission, require_responsable
 from app.models import Etablissement, Formation, ProgrammeModule
 from app.schemas.catalog import (
     EtablissementOut,
@@ -99,12 +99,16 @@ def get_formation(formation_id: int, db: Session = Depends(get_db)):
     "/formations",
     response_model=FormationDetail,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_responsable)],
 )
-def create_formation(payload: FormationCreate, db: Session = Depends(get_db)):
+def create_formation(
+    payload: FormationCreate,
+    user: AuthenticatedUser = Depends(require_responsable),
+    db: Session = Depends(get_db),
+):
     etab = db.scalar(select(Etablissement).where(func.lower(Etablissement.code) == payload.etablissement_code.lower()))
     if etab is None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Établissement « {payload.etablissement_code} » inconnu.")
+    assert_establishment_permission(user, etab.code)
     formation = Formation(etablissement_id=etab.id, **payload.model_dump(exclude={"etablissement_code"}))
     db.add(formation)
     db.commit()  # un doublon (établissement, code) lève IntegrityError -> 409 (main.py)
@@ -112,9 +116,15 @@ def create_formation(payload: FormationCreate, db: Session = Depends(get_db)):
     return formation
 
 
-@router.patch("/formations/{formation_id}", response_model=FormationDetail, dependencies=[Depends(require_responsable)])
-def update_formation(formation_id: int, payload: FormationUpdate, db: Session = Depends(get_db)):
+@router.patch("/formations/{formation_id}", response_model=FormationDetail)
+def update_formation(
+    formation_id: int,
+    payload: FormationUpdate,
+    user: AuthenticatedUser = Depends(require_responsable),
+    db: Session = Depends(get_db),
+):
     formation = get_formation_or_404(db, formation_id)
+    assert_establishment_permission(user, formation.etablissement.code)
     changes = payload.model_dump(exclude_unset=True)
     obligatoires = {"intitule", "niveau", "duree_annees", "langue_enseignement", "actif"}
     nuls = sorted(k for k, v in changes.items() if v is None and k in obligatoires)
@@ -137,11 +147,15 @@ def update_formation(formation_id: int, payload: FormationUpdate, db: Session = 
 @router.delete(
     "/formations/{formation_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_responsable)],
 )
-def archive_formation(formation_id: int, db: Session = Depends(get_db)):
+def archive_formation(
+    formation_id: int,
+    user: AuthenticatedUser = Depends(require_responsable),
+    db: Session = Depends(get_db),
+):
     """Archivage (actif = false) plutôt que suppression : les candidatures existantes restent valides."""
     formation = get_formation_or_404(db, formation_id)
+    assert_establishment_permission(user, formation.etablissement.code)
     formation.actif = False
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -161,11 +175,16 @@ def get_programme(formation_id: int, db: Session = Depends(get_db)):
 @router.put(
     "/formations/{formation_id}/programme",
     response_model=ProgrammeOut,
-    dependencies=[Depends(require_responsable)],
 )
-def replace_programme(formation_id: int, payload: ProgrammeIn, db: Session = Depends(get_db)):
+def replace_programme(
+    formation_id: int,
+    payload: ProgrammeIn,
+    user: AuthenticatedUser = Depends(require_responsable),
+    db: Session = Depends(get_db),
+):
     """Remplace tout le programme en une transaction."""
     formation = get_formation_or_404(db, formation_id)
+    assert_establishment_permission(user, formation.etablissement.code)
     trop_loin = [m.annee for m in payload.modules if m.annee > formation.duree_annees]
     if trop_loin:
         raise HTTPException(

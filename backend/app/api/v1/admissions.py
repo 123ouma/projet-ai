@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session, contains_eager
 from app.api.v1.formations import get_formation_or_404
 from app.core.config import get_settings
 from app.core.database import get_db
-from app.core.security import require_responsable
+from app.core.security import AuthenticatedUser, assert_establishment_permission, require_responsable
 from app.models import ConditionAdmission, Etablissement, Formation, Tarif
 from app.schemas.catalog import (
     Comparaison,
@@ -136,12 +136,18 @@ def get_tarifs(
 @router.put(
     "/formations/{formation_id}/tarifs/{annee}",
     response_model=TarifOut,
-    dependencies=[Depends(require_responsable)],
 )
-def upsert_tarif(formation_id: int, annee: AnneePath, payload: TarifIn, db: Session = Depends(get_db)):
+def upsert_tarif(
+    formation_id: int,
+    annee: AnneePath,
+    payload: TarifIn,
+    user: AuthenticatedUser = Depends(require_responsable),
+    db: Session = Depends(get_db),
+):
     """Crée ou remplace le tarif d'une formation pour une année universitaire."""
     annee = _annee(annee)
-    get_formation_or_404(db, formation_id)
+    formation = get_formation_or_404(db, formation_id)
+    assert_establishment_permission(user, formation.etablissement.code)
     tarif = db.scalar(select(Tarif).where(Tarif.formation_id == formation_id, Tarif.annee_universitaire == annee))
     data = payload.model_dump()
     data["devise"] = data["devise"].upper()
@@ -159,9 +165,15 @@ def upsert_tarif(formation_id: int, annee: AnneePath, payload: TarifIn, db: Sess
 @router.delete(
     "/formations/{formation_id}/tarifs/{annee}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_responsable)],
 )
-def delete_tarif(formation_id: int, annee: AnneePath, db: Session = Depends(get_db)):
+def delete_tarif(
+    formation_id: int,
+    annee: AnneePath,
+    user: AuthenticatedUser = Depends(require_responsable),
+    db: Session = Depends(get_db),
+):
+    formation = get_formation_or_404(db, formation_id)
+    assert_establishment_permission(user, formation.etablissement.code)
     tarif = db.scalar(select(Tarif).where(Tarif.formation_id == formation_id, Tarif.annee_universitaire == annee))
     if tarif is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tarif introuvable pour cette année.")
@@ -182,10 +194,15 @@ def get_conditions(formation_id: int, db: Session = Depends(get_db)):
 @router.put(
     "/formations/{formation_id}/conditions",
     response_model=ConditionsOut,
-    dependencies=[Depends(require_responsable)],
 )
-def upsert_conditions(formation_id: int, payload: ConditionsIn, db: Session = Depends(get_db)):
+def upsert_conditions(
+    formation_id: int,
+    payload: ConditionsIn,
+    user: AuthenticatedUser = Depends(require_responsable),
+    db: Session = Depends(get_db),
+):
     formation = get_formation_or_404(db, formation_id)
+    assert_establishment_permission(user, formation.etablissement.code)
     if formation.conditions is None:
         formation.conditions = ConditionAdmission(**payload.model_dump())
     else:

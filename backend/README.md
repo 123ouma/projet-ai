@@ -12,13 +12,14 @@ Structure conforme au document d'architecture SA-4 (§8).
 | SA-20 | API des formations et des programmes (liste filtrée et paginée, détail, création, modification, archivage, programme par année/semestre) | `app/api/v1/formations.py` |
 | SA-21 | API des tarifs et des conditions d'admission, consultation par budget, comparaison de 2 à 4 formations | `app/api/v1/admissions.py` |
 | SA-26 | Mémoire temporaire des conversations : expiration après inactivité, fenêtre de contexte bornée pour le LLM, purge | `app/services/memory/`, `app/api/v1/conversations.py` |
+| SA-28 | Comptes, authentification Argon2id/Bearer et rôles avec périmètre établissement | `app/api/v1/auth.py`, `app/core/security.py` |
 
 ## Démarrage
 
 ### Avec Docker (recommandé)
 ```bash
 cd backend
-cp .env.example .env          # puis changer POSTGRES_PASSWORD et ADMIN_API_TOKEN
+cp .env.example .env          # puis changer POSTGRES_PASSWORD
 docker compose up --build
 docker compose exec backend python -m app.db.migrate --seed   # données de démo (facultatif)
 ```
@@ -43,8 +44,10 @@ TEST_DATABASE_URL=... pytest            # + tests d'intégration API sur une bas
 
 ## Endpoints (préfixe `/api/v1`)
 
-Consultation publique ; les routes d'écriture exigent l'en-tête `X-Admin-Token`
-(**provisoire**, remplacé par le rôle « responsable NAU » de SA-28).
+La consultation du catalogue reste publique. Les écritures de formations, programmes,
+tarifs et conditions exigent un compte authentifié avec le rôle correspondant à
+l'établissement concerné, ou le rôle `administrateur`. L'inscription publique attribue
+uniquement le rôle `candidat`.
 
 | Méthode | Route | Ticket |
 |---|---|---|
@@ -64,6 +67,10 @@ Consultation publique ; les routes d'écriture exigent l'en-tête `X-Admin-Token
 | DELETE | `/conversations/{session_id}` | SA-26 |
 | POST | `/visitor-sessions` | SA-25 |
 | GET / DELETE | `/visitor-sessions/{session_id}` | SA-25 |
+| POST | `/auth/register` | SA-28 |
+| POST | `/auth/login` | SA-28 |
+| GET | `/auth/me` | SA-28 |
+| POST | `/auth/logout` | SA-28 |
 
 Les routes SA-25 créent un UUID côté serveur et placent le secret d'accès dans un cookie
 `HttpOnly`, `SameSite=Lax` (et `Secure` en production). Seul son hash SHA-256 est stocké.
@@ -72,11 +79,17 @@ La durée d'inactivité se configure avec `VISITOR_SESSION_TTL_MINUTES` (60 par 
 Terminer une session efface aussi sa mémoire SA-26. Le worker
 `python -m app.workers.purge_memory` purge périodiquement les sessions terminées ou expirées.
 
+Les comptes utilisent Argon2id pour les mots de passe et des jetons Bearer opaques,
+aléatoires et révocables; seul leur hash SHA-256 est stocké. Les jetons expirent après
+`AUTH_TOKEN_TTL_MINUTES` (60 par défaut). Le rôle public par défaut est `candidat`;
+les rôles responsables et administrateur doivent être attribués par une procédure
+administrative. Les rôles responsables sont limités à leur établissement.
+
 ## Migrations
 
 Fichiers `database/migrations/NNN_nom.sql`, appliqués dans l'ordre et une seule fois
 (table `schema_migrations`). Pour modifier le schéma : **ajouter** un nouveau fichier
-(`004_...sql`), ne jamais modifier une migration déjà appliquée.
+(`006_...sql` après SA-28), ne jamais modifier une migration déjà appliquée.
 
 ```bash
 python -m app.db.migrate --status
@@ -88,9 +101,8 @@ python -m app.db.migrate --status
   SA-20/21. À fusionner avec votre modèle : une seule version des tables doit rester.
 - **Islem (SA-18)** : `database/seeds/001_catalogue_demo.sql` contient des données **fictives** ;
   à remplacer par les données collectées.
-- **Fares (SA-25 / SA-28 / SA-29)** : `session_id` de la mémoire = UUID de la session visiteur ;
-  ajouter la clé étrangère et le contrôle de propriété. Remplacer `require_responsable`
-  (`core/security.py`) par la vérification du rôle.
+- **Fares (SA-25 / SA-29)** : `session_id` de la mémoire = UUID de la session visiteur ;
+  rattacher ultérieurement les conversations au compte authentifié.
 - **Souhaila (SA-36 / SA-37)** : utiliser `memory.context_for_llm(session_id)` pour l'historique
   envoyé au LLM (voir `services/memory/__init__.py`).
 - **Worker** : lancer `python -m app.workers.purge_memory` périodiquement.

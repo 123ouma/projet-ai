@@ -30,8 +30,8 @@ class Settings(BaseSettings):
     # Catalogue (SA-20 / SA-21)
     annee_universitaire_courante: str = "2026-2027"
 
-    # Protection provisoire des routes d'écriture, en attendant SA-28 (auth et rôles)
-    admin_api_token: str | None = None
+    # Authentification Bearer (SA-28)
+    auth_token_ttl_minutes: int = Field(default=60, gt=0)
 
     # Mémoire temporaire des conversations (SA-26)
     memory_backend: str = "postgres"  # "postgres" ou "memory"
