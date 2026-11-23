@@ -97,7 +97,9 @@ def test_cycle_de_vie_formation():
 
 # ---------- SA-26 ----------
 def test_memoire_conversation():
-    sid = uuid.uuid4()
+    created = client.post(f"{API}/visitor-sessions")
+    assert created.status_code == 201, created.text
+    sid = uuid.UUID(created.json()["session_id"])
     base = f"{API}/conversations/{sid}"
     assert client.post(f"{base}/messages", json={"role": "user", "content": "Quels masters à l'IIT ?"}).status_code == 201
     client.post(f"{base}/messages", json={"role": "assistant", "content": "Voici la liste..."})
@@ -110,3 +112,4 @@ def test_memoire_conversation():
     assert client.delete(base).status_code == 204
     assert client.get(f"{base}/messages").json()["count"] == 0
     assert client.get(f"{API}/conversations/pas-un-uuid/messages").status_code == 422
+    assert client.delete(f"{API}/visitor-sessions/{sid}").status_code == 204

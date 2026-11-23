@@ -62,6 +62,15 @@ Consultation publique ; les routes d'écriture exigent l'en-tête `X-Admin-Token
 | GET | `/conversations/{session_id}/messages` (historique) | SA-26 |
 | GET | `/conversations/{session_id}/context` (fenêtre pour le LLM) | SA-26 |
 | DELETE | `/conversations/{session_id}` | SA-26 |
+| POST | `/visitor-sessions` | SA-25 |
+| GET / DELETE | `/visitor-sessions/{session_id}` | SA-25 |
+
+Les routes SA-25 créent un UUID côté serveur et placent le secret d'accès dans un cookie
+`HttpOnly`, `SameSite=Lax` (et `Secure` en production). Seul son hash SHA-256 est stocké.
+Toutes les routes SA-26 exigent ce cookie et vérifient que le `session_id` lui appartient.
+La durée d'inactivité se configure avec `VISITOR_SESSION_TTL_MINUTES` (60 par défaut).
+Terminer une session efface aussi sa mémoire SA-26. Le worker
+`python -m app.workers.purge_memory` purge périodiquement les sessions terminées ou expirées.
 
 ## Migrations
 

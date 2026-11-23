@@ -5,6 +5,7 @@ Aucun secret n'est écrit en dur : voir .env.example à la racine du projet.
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # backend/app/core/config.py -> dossier backend/ (qui contient database/)
@@ -38,6 +39,7 @@ class Settings(BaseSettings):
     memory_max_messages: int = 20  # messages max envoyés au LLM
     memory_max_chars: int = 8000  # taille max du contexte envoyé au LLM
     memory_max_stored: int = 100  # messages max conservés par session
+    visitor_session_ttl_minutes: int = Field(default=60, gt=0)  # expiration après inactivité
 
 
 @lru_cache
