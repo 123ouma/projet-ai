@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+import { ChatWindow } from "@/components/chat/chat-window";
+
+export const metadata: Metadata = {
+  title: "Assistant d'orientation | SmartCampus AI",
+};
+
 export default function Page() {
-  return <h1 className="text-2xl font-bold p-8">Chat — à venir</h1>;
+  return <ChatWindow />;
 }
