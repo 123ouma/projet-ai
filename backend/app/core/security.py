@@ -52,9 +52,9 @@ def _unauthorized() -> HTTPException:
     )
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Security(_bearer),
-    db: Session = Depends(get_db),
+def _authenticate_credentials(
+    credentials: HTTPAuthorizationCredentials | None,
+    db: Session,
 ) -> AuthenticatedUser:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise _unauthorized()
@@ -99,6 +99,22 @@ def get_current_user(
         auth_session_id=auth_session.session_id,
         roles=grants,
     )
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Security(_bearer),
+    db: Session = Depends(get_db),
+) -> AuthenticatedUser:
+    return _authenticate_credentials(credentials, db)
+
+
+def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Security(_bearer),
+    db: Session = Depends(get_db),
+) -> AuthenticatedUser | None:
+    if credentials is None:
+        return None
+    return _authenticate_credentials(credentials, db)
 
 
 def require_roles(*role_codes: str):

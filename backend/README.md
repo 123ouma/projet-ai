@@ -67,6 +67,7 @@ uniquement le rôle `candidat`.
 | DELETE | `/conversations/{session_id}` | SA-26 |
 | POST | `/visitor-sessions` | SA-25 |
 | GET / DELETE | `/visitor-sessions/{session_id}` | SA-25 |
+| POST | `/visitor-sessions/{session_id}/claim` | SA-29 |
 | POST | `/auth/register` | SA-28 |
 | POST | `/auth/login` | SA-28 |
 | GET | `/auth/me` | SA-28 |
@@ -74,9 +75,15 @@ uniquement le rôle `candidat`.
 
 Les routes SA-25 créent un UUID côté serveur et placent le secret d'accès dans un cookie
 `HttpOnly`, `SameSite=Lax` (et `Secure` en production). Seul son hash SHA-256 est stocké.
-Toutes les routes SA-26 exigent ce cookie et vérifient que le `session_id` lui appartient.
-La durée d'inactivité se configure avec `VISITOR_SESSION_TTL_MINUTES` (60 par défaut).
-Terminer une session efface aussi sa mémoire SA-26. Le worker
+Avant le rattachement, les routes de conversation vérifient la propriété par ce cookie.
+Un utilisateur authentifié peut appeler `/visitor-sessions/{session_id}/claim` : le cookie
+prouve la propriété initiale, puis le compte devient propriétaire de la session sans déplacer
+ni effacer l'historique. Après le rattachement, l'accès aux conversations et à la session
+requiert le Bearer du même compte; le cookie seul ne suffit plus. Le rattachement est
+idempotent pour ce compte et refusé si la session appartient déjà à un autre compte.
+La déconnexion révoque le Bearer sans délier la session, et une session terminée ou expirée
+reste inaccessible. La durée d'inactivité se configure avec `VISITOR_SESSION_TTL_MINUTES`
+(60 par défaut). Terminer une session efface aussi sa mémoire SA-26. Le worker
 `python -m app.workers.purge_memory` purge périodiquement les sessions terminées ou expirées.
 
 Les comptes utilisent Argon2id pour les mots de passe et des jetons Bearer opaques,
@@ -101,8 +108,8 @@ python -m app.db.migrate --status
   SA-20/21. À fusionner avec votre modèle : une seule version des tables doit rester.
 - **Islem (SA-18)** : `database/seeds/001_catalogue_demo.sql` contient des données **fictives** ;
   à remplacer par les données collectées.
-- **Fares (SA-25 / SA-29)** : `session_id` de la mémoire = UUID de la session visiteur ;
-  rattacher ultérieurement les conversations au compte authentifié.
+- **Fares (SA-25 / SA-29)** : la mémoire conserve le même UUID de session avant et après
+  rattachement au compte authentifié.
 - **Souhaila (SA-36 / SA-37)** : utiliser `memory.context_for_llm(session_id)` pour l'historique
   envoyé au LLM (voir `services/memory/__init__.py`).
 - **Worker** : lancer `python -m app.workers.purge_memory` périodiquement.

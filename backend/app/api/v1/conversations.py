@@ -1,14 +1,9 @@
-"""SA-26 : routes de la mémoire temporaire des conversations.
-
-session_id = identifiant (UUID) de la session visiteur créée par SA-25 (Fares).
-TODO SA-25/SA-29 : vérifier que la session appartient bien à l'appelant
-(cookie/jeton de session) avant de lire ou d'écrire.
-"""
+"""SA-26 : routes de la mémoire temporaire des conversations."""
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from app.core.visitor_session import require_visitor_session
+from app.core.visitor_session import require_session_access
 from app.models.visitor_session import VisitorSessionRow
 from app.schemas.conversation import ConversationMemoryOut, MessageIn, MessageOut
 from app.services.memory import ConversationMemory, get_memory
@@ -16,8 +11,8 @@ from app.services.memory import ConversationMemory, get_memory
 router = APIRouter(prefix="/conversations", tags=["Mémoire des conversations (SA-26)"])
 
 _SESSION_ACCESS_RESPONSES = {
-    401: {"description": "Cookie de session absent ou invalide."},
-    403: {"description": "La session appartient à un autre visiteur."},
+    401: {"description": "Cookie visiteur ou authentification Bearer requis."},
+    403: {"description": "La session appartient à un autre visiteur ou compte."},
     404: {"description": "Session inexistante."},
     410: {"description": "Session expirée ou terminée."},
 }
@@ -32,7 +27,7 @@ def add_message(
     session_id: UUID,
     payload: MessageIn,
     memory: ConversationMemory = Depends(get_memory),
-    _: VisitorSessionRow = Depends(require_visitor_session),
+    _: VisitorSessionRow = Depends(require_session_access),
 ):
     try:
         return memory.add(str(session_id), payload.role, payload.content)
@@ -48,7 +43,7 @@ def add_message(
 def get_history(
     session_id: UUID,
     memory: ConversationMemory = Depends(get_memory),
-    _: VisitorSessionRow = Depends(require_visitor_session),
+    _: VisitorSessionRow = Depends(require_session_access),
 ):
     """Historique complet encore en mémoire (affichage du chat)."""
     messages = memory.history(str(session_id))
@@ -63,7 +58,7 @@ def get_history(
 def get_context(
     session_id: UUID,
     memory: ConversationMemory = Depends(get_memory),
-    _: VisitorSessionRow = Depends(require_visitor_session),
+    _: VisitorSessionRow = Depends(require_session_access),
 ):
     """Fenêtre réduite à envoyer au LLM (bornée en messages et en caractères)."""
     messages = memory.context(str(session_id))
@@ -79,7 +74,7 @@ def clear_memory(
     session_id: UUID,
     response: Response,
     memory: ConversationMemory = Depends(get_memory),
-    _: VisitorSessionRow = Depends(require_visitor_session),
+    _: VisitorSessionRow = Depends(require_session_access),
 ):
     """« Nouvelle conversation » : efface la mémoire de la session."""
     memory.clear(str(session_id))

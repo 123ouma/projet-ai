@@ -19,7 +19,7 @@ class VisitorSessionRow(Base):
     )
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    # SA-29 can populate this once the backend account model is available.
+    # Set when the visitor claims this session while authenticated (SA-29).
     linked_user_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("users.user_id", ondelete="SET NULL")
     )
