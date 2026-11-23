@@ -12,6 +12,7 @@ Structure conforme au document d'architecture SA-4 (§8).
 | SA-20 | API des formations et des programmes (liste filtrée et paginée, détail, création, modification, archivage, programme par année/semestre) | `app/api/v1/formations.py` |
 | SA-21 | API des tarifs et des conditions d'admission, consultation par budget, comparaison de 2 à 4 formations | `app/api/v1/admissions.py` |
 | SA-36 | Connexion au service LLM d'Oumayma (Qwen3.5-9B, SA-34) : client HTTP, clé `X-API-Key`, gestion des erreurs 502/503, routes `/assistant` (Souhaila) | `app/services/llm/`, `app/api/v1/assistant.py` |
+| SA-37 | Dialogue multi-tours : l'historique de la session (mémoire SA-26) est envoyé au LLM (champ `history`), profil cumulé (budget, en ligne) — route `/assistant/chat/{session_id}` (Souhaila) | `app/services/llm/conversation.py`, `app/api/v1/assistant.py` |
 | SA-26 | Mémoire temporaire des conversations : expiration après inactivité, fenêtre de contexte bornée pour le LLM, purge | `app/services/memory/`, `app/api/v1/conversations.py` |
 
 ## Démarrage
@@ -65,6 +66,7 @@ Consultation publique ; les routes d'écriture exigent l'en-tête `X-Admin-Token
 | DELETE | `/conversations/{session_id}` | SA-26 |
 | POST | `/assistant/understand` (intent, budget_dt, online) | SA-36 |
 | GET | `/assistant/health` (service LLM joignable ? mode mock ?) | SA-36 |
+| POST | `/assistant/chat/{session_id}` (avec historique + profil cumulé) | SA-37 |
 
 ## Service LLM (SA-36)
 
@@ -89,6 +91,21 @@ curl -X POST http://localhost:8000/api/v1/assistant/understand \
 Langues : `fr`, `en`, `arabizi`, `tn` (pas de détection automatique).
 Erreurs : `503` si le LLM est injoignable ou trop lent, `502` si clé refusée ou réponse invalide.
 Remplacer Qwen par une version fine-tunée (QLoRA) se fait côté service LLM, sans changer ces routes.
+
+## Historique des conversations (SA-37)
+
+`POST /api/v1/assistant/chat/{session_id}` (session_id = UUID de la session visiteur) :
+1. récupère les messages précédents avec `memory.context_for_llm(session_id)` (SA-26, 20 messages / 8000 caractères max) ;
+2. les envoie au LLM dans le champ optionnel `history` : `[{"role": "user"|"assistant", "content": "..."}]` ;
+3. enregistre le message de l'étudiant et la réponse du LLM (JSON intent/budget_dt/online) dans la mémoire ;
+4. renvoie la compréhension du message + un **profil cumulé** : un budget donné au 1er message est conservé
+   si le message suivant ne le répète pas.
+
+Si le LLM échoue (502/503), rien n'est enregistré. `/assistant/understand` (SA-36, sans historique) reste inchangé :
+sans historique, la requête envoyée au service LLM est identique à SA-36.
+Le service LLM doit lire `history` pour en tenir compte (extension du service d'Oumayma) ; un service
+qui ne le connaît pas l'ignore sans erreur.
+Nouvelle conversation : `DELETE /api/v1/conversations/{session_id}`.
 
 ## Migrations
 

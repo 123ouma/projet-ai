@@ -22,13 +22,18 @@ class HttpLLMClient(LLMClient):
         self.api_key = api_key
         self._client = httpx.Client(base_url=self.base_url, timeout=timeout, transport=transport)
 
-    def understand(self, message: str, language: Language) -> UnderstandOut:
+    def understand(
+        self, message: str, language: Language, history: list[dict[str, str]] | None = None
+    ) -> UnderstandOut:
         if not self.api_key:
             raise LLMUnavailableError("LLM_API_KEY n'est pas configurée dans le backend.")
+        payload: dict = {"message": message, "language": language}
+        if history:  # SA-37 : champ optionnel, omis si vide pour garder la requête SA-36 inchangée
+            payload["history"] = history
         try:
             response = self._client.post(
                 "/v1/understand",
-                json={"message": message, "language": language},
+                json=payload,
                 headers={"X-API-Key": self.api_key},
             )
         except httpx.TimeoutException as exc:

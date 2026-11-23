@@ -129,3 +129,31 @@ def test_health_injoignable():
         raise httpx.ConnectError("refused", request=request)
 
     assert client_avec(handler).health().reachable is False
+
+
+# ---------- SA-37 : champ history ----------
+def test_history_envoye_si_present():
+    recu = {}
+
+    def handler(request):
+        recu["json"] = httpx.Response(200, content=request.content).json()
+        return httpx.Response(200, json=reponse_llm("confirm"))
+
+    historique = [
+        {"role": "user", "content": "Nheb préinscription fi licence info"},
+        {"role": "assistant", "content": '{"intent": "registration", "budget_dt": null, "online": null}'},
+    ]
+    client_avec(handler).understand("Ey nconfirmi", "arabizi", history=historique)
+    assert recu["json"] == {"message": "Ey nconfirmi", "language": "arabizi", "history": historique}
+
+
+@pytest.mark.parametrize("historique", [None, []])
+def test_history_absent_requete_identique_sa36(historique):
+    recu = {}
+
+    def handler(request):
+        recu["json"] = httpx.Response(200, content=request.content).json()
+        return httpx.Response(200, json=reponse_llm())
+
+    client_avec(handler).understand("Bonjour", "fr", history=historique)
+    assert recu["json"] == {"message": "Bonjour", "language": "fr"}  # pas de clé history

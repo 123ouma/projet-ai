@@ -37,3 +37,20 @@ class LLMHealthOut(BaseModel):
     status: str | None = None
     model: str | None = None
     mock: bool | None = None
+
+
+# ---------- SA-37 : dialogue avec historique ----------
+class ProfilOut(BaseModel):
+    """Profil cumulé sur toute la conversation : une valeur connue n'est pas oubliée
+    si le message suivant ne la répète pas (ex. budget donné au premier message)."""
+
+    intent: Intent | None = Field(description="Intention du dernier message")
+    budget_dt: int | None = Field(description="Dernier budget connu dans la conversation")
+    online: bool | None = Field(description="Dernière préférence en ligne connue")
+
+
+class ChatOut(BaseModel):
+    session_id: str
+    understanding: UnderstandOut = Field(description="Ce que le LLM a compris du message actuel")
+    profil: ProfilOut
+    history_sent: int = Field(description="Nombre de messages précédents envoyés au LLM")

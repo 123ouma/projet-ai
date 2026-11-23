@@ -22,8 +22,14 @@ class LLMBadResponseError(LLMError):
 
 class LLMClient(ABC):
     @abstractmethod
-    def understand(self, message: str, language: Language) -> UnderstandOut:
-        """Analyse un message et renvoie intent, budget_dt et online."""
+    def understand(
+        self, message: str, language: Language, history: list[dict[str, str]] | None = None
+    ) -> UnderstandOut:
+        """Analyse un message et renvoie intent, budget_dt et online.
+
+        history (SA-37) : messages précédents [{"role": "user"|"assistant", "content": ...}],
+        du plus ancien au plus récent. Absent ou vide = requête identique à SA-36.
+        """
 
     @abstractmethod
     def health(self) -> LLMHealthOut:
