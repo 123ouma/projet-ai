@@ -38,9 +38,12 @@ uvicorn app.main:app --reload
 ### Tests
 ```bash
 cd backend
-pytest                                  # tests unitaires (sans base)
-TEST_DATABASE_URL=... pytest            # + tests d'intégration API sur une base de test
+pytest                                  # tests unitaires et API sur SQLite isolé
+TEST_DATABASE_URL=... pytest tests/test_api.py  # intégration PostgreSQL facultative
 ```
+Les tests API locaux remplacent `get_db` par une base SQLite en mémoire et ne lisent
+ni n'écrivent dans une base de développement ou de production. `tests/test_api.py`
+nécessite une base PostgreSQL de test séparée, migrée et seedée.
 
 ## Endpoints (préfixe `/api/v1`)
 

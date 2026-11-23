@@ -81,6 +81,11 @@ def test_registration_hashes_password_and_only_grants_candidate(client):
     account = register(test_client, "Student@Example.test")
     assert account["user"]["email"] == "student@example.test"
     assert [role["role_code"] for role in account["user"]["roles"]] == ["candidat"]
+    duplicate = test_client.post(
+        "/api/v1/auth/register",
+        json={"email": "student@example.test", "password": "un-mot-de-passe-solide"},
+    )
+    assert duplicate.status_code == 409
     assert test_client.get(
         "/api/v1/auth/me",
         headers={"Authorization": f"Bearer {account['access_token']}"},
